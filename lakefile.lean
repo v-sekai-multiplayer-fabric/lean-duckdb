@@ -15,6 +15,20 @@ package «lean_duckdb» where
     "-Wl,-rpath,$ORIGIN", "-Wl,-rpath,$ORIGIN/../../../vendor"
   ]
 
+-- Auto-vendor DuckDB on `lake update` so this works as a git dependency: a downstream `require
+-- lean_duckdb from git` followed by `lake update` fetches the binary, no manual step. Re-fetch by
+-- deleting vendor/libduckdb.so. Override version/platform with DUCKDB_VERSION / DUCKDB_PLATFORM.
+post_update pkg do
+  let soFile := pkg.dir / "vendor" / "libduckdb.so"
+  unless (← soFile.pathExists) do
+    logInfo "lean-duckdb: vendoring DuckDB via scripts/fetch-duckdb.sh"
+    let fetchSh := (pkg.dir / "scripts" / "fetch-duckdb.sh").toString
+    let out ← IO.Process.output { cmd := "bash", args := #[fetchSh] }
+    if out.exitCode != 0 then
+      logError s!"lean-duckdb: fetch-duckdb.sh failed (exit {out.exitCode}):\n{out.stdout}\n{out.stderr}"
+    else
+      logInfo out.stdout
+
 @[default_target]
 lean_lib «LeanDuckDB» where
 

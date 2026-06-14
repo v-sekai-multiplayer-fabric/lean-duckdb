@@ -35,8 +35,40 @@ let raw   ← query "SELECT avg(min_cone_deg) AS m FROM read_parquet('data.parqu
 `query`/`readParquet`/`readCsv` return a `DuckDB.Table` (`columns : Array String`,
 `rows : Array (Array String)`); `Table.column`, `Table.columnFloat`, `Table.colIndex` pull fields.
 Arbitrary SQL (joins, aggregates, `read_parquet`/`read_csv_auto`/globs) works through `query`.
+A `COPY (...) TO 'out.parquet' (FORMAT PARQUET, COMPRESSION ZSTD)` statement run through `query`
+**writes** Parquet, so the same binding round-trips data out of Lean.
+
+## Using it as a dependency
+
+Add the git require to your `lakefile.lean` and run `lake update lean_duckdb`. The package's
+`post_update` hook runs `scripts/fetch-duckdb.sh`, vendoring the DuckDB binary into the dependency
+checkout automatically (no manual fetch):
+
+```lean
+require lean_duckdb from git
+  "https://github.com/v-sekai-multiplayer-fabric/lean-duckdb" @ "main"
+```
+
+The `extern_lib` (the FFI shim) links into your binaries automatically, but the DuckDB shared library
+itself is in `moreLinkArgs`, which Lake does not propagate. Point a consuming `lean_exe` at the
+dependency's vendored binary:
+
+```lean
+lean_exe my_tool where
+  root := `Main
+  moreLinkArgs := #[
+    "-L.lake/packages/lean_duckdb/vendor", "-lduckdb",
+    "-Wl,-rpath,$ORIGIN/../../packages/lean_duckdb/vendor"
+  ]
+```
 
 ## Linking & the "static" caveat
+
+Inside this repo (building it directly) the link args are relative to the package root:
+
+```lean
+moreLinkArgs := #["-Lvendor", "-lduckdb", "-Wl,-rpath,$ORIGIN", "-Wl,-rpath,$ORIGIN/../../../vendor"]
+```
 
 Add this to **your** package's `moreLinkArgs` (consumers link DuckDB too):
 
