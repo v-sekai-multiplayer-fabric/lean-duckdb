@@ -1,0 +1,7 @@
+/.lake/
+/build/
+*.olean
+# Vendored DuckDB binaries are fetched by scripts/fetch-duckdb.sh, not committed.
+/vendor/duckdb.h
+/vendor/libduckdb.so
+/vendor/libduckdb_static.a
