@@ -1,7 +1,7 @@
 /.lake/
 /build/
 *.olean
-# Vendored DuckDB binaries are fetched by scripts/fetch-duckdb.sh, not committed.
-/vendor/duckdb.h
-/vendor/libduckdb.so
-/vendor/libduckdb_static.a
+# The whole vendor/ tree is a build artifact: scripts/build-duckdb-static.sh
+# fetches the DuckDB amalgamation + extension SOURCE and compiles the encapsulated
+# libduckdb.a there on a plain `lake build`. Nothing under vendor/ is committed.
+/vendor/
